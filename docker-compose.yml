@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: emailverify
+      POSTGRES_USER: emailverify
+      POSTGRES_PASSWORD: emailverify123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://emailverify:emailverify123@db:5432/emailverify
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+    volumes:
+      - ./data:/app/data
+    command: ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  worker:
+    build: .
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://emailverify:emailverify123@db:5432/emailverify
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+      - api
+    volumes:
+      - ./data:/app/data
+    command: ["python", "-m", "app.worker"]
+
+  streamlit:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://emailverify:emailverify123@db:5432/emailverify
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - api
+    volumes:
+      - ./data:/app/data
+    command: ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+volumes:
+  redis_data:
+  postgres_data:
