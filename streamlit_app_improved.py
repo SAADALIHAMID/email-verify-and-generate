@@ -1790,7 +1790,7 @@ def main():
                                 if 'Valid' in str(val): return 'color: #28a745; font-weight: bold; background-color: #f8fff9'
                                 if 'Invalid' in str(val): return 'color: #dc3545; opacity: 0.8'
                                 return ''
-                            st.dataframe(df_sf.style.applymap(style_results, subset=['Result']), use_container_width=True)
+                            st.dataframe(df_sf.style.map(style_results, subset=['Result']), use_container_width=True)
                         else:
                             st.error(f"❌ Could not resolve MX records for {sf_domain_input}")
 
